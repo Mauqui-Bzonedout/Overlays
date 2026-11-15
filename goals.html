@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goal tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#ff4fa3;--pink-deep:#e0257f;--cyan:#7fe9f2;--gold:#ffc46b;--orange:#ff8a4c;--ink:#170b2b;--panel:#1d1230;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{font-family:"Barlow Condensed",system-ui,sans-serif;color:#fff}
+.display{font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-weight:400}
+body.pv{background:linear-gradient(160deg,#24104f 0%,#5a1d7a 38%,#b8306f 72%,#ff8a6b 100%)}
+#gear{position:fixed;top:18px;right:18px;width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:#fff;font-size:24px;cursor:pointer;opacity:0;transition:opacity .3s;z-index:50}
+body.mouse #gear{opacity:.9} body.noui #gear,body.noui #panel{display:none!important}
+#panel{position:fixed;top:76px;right:18px;width:360px;max-width:calc(100vw - 36px);max-height:calc(100vh - 94px);overflow:auto;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.55);display:none;z-index:50;font-size:17px}
+#panel.open{display:block}
+#panel h2{margin:0 0 12px;font-size:22px;letter-spacing:.12em;color:var(--pink);border-bottom:1px solid var(--line);padding-bottom:10px}
+#panel h3{margin:16px 0 0;font-size:16px;letter-spacing:.14em;color:var(--cyan)}
+#panel label{display:block;margin:12px 0 6px;font-weight:600;letter-spacing:.12em;font-size:14px;color:#cdbfe0;text-transform:uppercase}
+#panel label.chk{display:flex;align-items:center;gap:8px}
+.seg,.row{display:flex;gap:8px}
+.seg button,.btn{flex:1;font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 6px;border-radius:7px;border:1px solid var(--line);background:#2a1d42;color:#fff;cursor:pointer}
+.seg button.on,#save{background:var(--pink);border-color:var(--pink);color:var(--ink)}
+#panel input[type=text],#panel input[type=number],#panel textarea,#panel select{width:100%;min-width:0;font:inherit;font-weight:500;padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:#120a20;color:#fff}
+#panel input[type=range]{width:100%;accent-color:var(--pink)}
+#panel textarea{height:110px;resize:vertical}
+#save,#copy,#clear{display:block;width:100%;margin-top:10px;padding:12px}
+#note{margin:8px 0 0;font-size:14px;line-height:1.3;color:#b9aacd;font-weight:500}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#wrap{position:fixed;left:28px;bottom:28px;width:660px;transform-origin:left bottom}
+#card{position:relative;padding:22px 26px 20px;border-radius:16px;background:rgba(23,11,43,.86);border:2px solid var(--line);box-shadow:0 18px 40px rgba(10,3,25,.5);overflow:hidden;transition:border-color .5s,box-shadow .5s}
+#card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(180deg,var(--cyan),var(--pink),var(--gold))}
+#inner{transition:opacity .4s,transform .4s}#inner.out{opacity:0;transform:translateY(12px)}
+#top{display:flex;align-items:center;gap:18px}
+#icon{flex:none;width:64px;height:64px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--pink),var(--orange))}
+#icon svg{width:38px;height:38px;fill:var(--ink)}
+#label{flex:1;font-size:56px;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#count{font-size:56px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}#count small{font-size:.62em;color:var(--cyan)}
+#track{margin:20px 0 16px;height:18px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden}
+#fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--pink) 55%,var(--gold));transition:width .9s cubic-bezier(.2,.8,.2,1)}
+#bottom{display:flex;align-items:center;justify-content:space-between;gap:16px}
+#latest{font-weight:700;font-size:30px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#latest b{color:var(--gold);font-weight:700}
+#stars{flex:none;display:flex;gap:6px}#stars svg{width:30px;height:30px;fill:rgba(255,255,255,.2);transition:fill .5s}#stars svg.on{fill:var(--gold);filter:drop-shadow(0 0 6px rgba(255,196,107,.7))}
+#done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(224,37,127,.96),rgba(255,138,76,.96));opacity:0;transform:scale(1.06);transition:opacity .5s,transform .5s;pointer-events:none}
+#card.reached #done{opacity:1;transform:none}#card.reached{border-color:var(--gold);box-shadow:0 0 40px rgba(255,196,107,.55)}
+#doneT{font-size:72px;line-height:1;color:#fff;text-shadow:0 5px 0 var(--ink)}
+#doneS{font-family:"Yellowtail",cursive;font-size:46px;color:var(--ink);margin-top:2px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style></head>
+<body>
+<div id="wrap"><div id="card">
+  <div id="inner">
+    <div id="top"><div id="icon"></div><div id="label" class="display"></div><div id="count" class="display"></div></div>
+    <div id="track"><div id="fill"></div></div>
+    <div id="bottom"><div id="latest"></div><div id="stars"></div></div>
+  </div>
+  <div id="done"><div id="doneT" class="display">GOAL REACHED</div><div id="doneS"></div></div>
+</div></div>
+<button id="gear" aria-label="Goal settings" aria-expanded="false">&#9881;</button>
+<div id="panel" role="dialog" aria-label="Goal settings">
+  <h2>GOAL SETTINGS</h2>
+  <h3>GOAL 1</h3><input type="text" data-k="goals.0.label" aria-label="Goal 1 name">
+  <div class="g"><div><label>Current</label><input type="number" data-k="goals.0.cur" min="0"></div><div><label>Target</label><input type="number" data-k="goals.0.tar" min="1"></div></div>
+  <label>Latest name</label><input type="text" data-k="goals.0.latest">
+  <h3>GOAL 2</h3><input type="text" data-k="goals.1.label" aria-label="Goal 2 name">
+  <div class="g"><div><label>Current</label><input type="number" data-k="goals.1.cur" min="0"></div><div><label>Target</label><input type="number" data-k="goals.1.tar" min="1"></div></div>
+  <label>Latest name</label><input type="text" data-k="goals.1.latest">
+  <h3>GOAL 3</h3><input type="text" data-k="goals.2.label" aria-label="Goal 3 name">
+  <div class="g"><div><label>Current</label><input type="number" data-k="goals.2.cur" min="0"></div><div><label>Target</label><input type="number" data-k="goals.2.tar" min="1"></div></div>
+  <label>Latest name</label><input type="text" data-k="goals.2.latest">
+  <label for="show">Show</label><select id="show" data-k="show"><option value="all">Cycle all</option><option value="0">Lock: goal 1</option><option value="1">Lock: goal 2</option><option value="2">Lock: goal 3</option></select>
+  <label for="secs">Rotate every <span id="secsOut"></span>s</label><input type="range" id="secs" data-k="secs" data-out="secsOut" min="5" max="60" step="1">
+  <label for="gsize">Size <span id="gsizeOut"></span>%</label><input type="range" id="gsize" data-k="size" data-out="gsizeOut" min="50" max="200" step="5">
+  <label class="chk"><input type="checkbox" data-k="pv"> Preview backdrop</label>
+  <button id="save" class="btn">Save &amp; apply</button><button id="copy" class="btn">Copy YoloBox link</button>
+  <p id="note">Numbers are typed in by hand for now. They will update on their own once your Kick account is connected.</p>
+</div>
+<script>
+var O=(function(){
+  var $=function(i){return document.getElementById(i)};
+  function get(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+  function set(o,p,v){var ks=p.split('.'),l=ks.pop();ks.reduce(function(a,k){return a[k]},o)[l]=v}
+  function merge(a,b){for(var k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')merge(a[k],b[k]);else a[k]=b[k]}return a}
+  function fit(el,w,h){function f(){var k=Math.min(innerWidth/w,innerHeight/h);el.style.transform='translate(-50%,-50%) scale('+k+')'}addEventListener('resize',f);f()}
+  function init(KEY,DEF,onApply){
+    var S=JSON.parse(JSON.stringify(DEF)),panel=$('panel'),noui=false;
+    try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv)merge(S,sv)}catch(e){}
+    var q=new URLSearchParams(location.search);
+    try{if(q.get('s'))merge(S,JSON.parse(q.get('s')))}catch(e){}
+    if(q.get('ui')==='0'){noui=true;document.body.classList.add('noui')}
+    var fields=panel.querySelectorAll('[data-k]');
+    function fill(){fields.forEach(function(el){var v=get(S,el.dataset.k);
+      if(el.classList.contains('seg'))el.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.v===String(v))});
+      else if(el.type==='checkbox')el.checked=!!v;
+      else if(el.hasAttribute('data-lines'))el.value=(v||[]).join('\n');
+      else el.value=v==null?'':v;
+      var out=el.dataset.out&&$(el.dataset.out);if(out)out.textContent=el.value})}
+    function read(){fields.forEach(function(el){var k=el.dataset.k;
+      if(el.classList.contains('seg'))return;
+      if(el.type==='checkbox')set(S,k,el.checked);
+      else if(el.type==='number'||el.type==='range'){var n=+el.value;if(isFinite(n))set(S,k,Math.max(+(el.min||-1e9),Math.min(+(el.max||1e9),n)))}
+      else if(el.hasAttribute('data-lines'))set(S,k,el.value.split('\n').map(function(t){return t.trim()}).filter(Boolean));
+      else set(S,k,el.value.trim())})}
+    function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    function apply(){document.body.classList.toggle('pv',!!S.pv&&!noui);onApply(S)}
+    function commit(){read();apply();save();fill()}
+    panel.addEventListener('click',function(e){var b=e.target.closest('.seg button');if(!b)return;read();set(S,b.parentNode.dataset.k,b.dataset.v);apply();save();fill()});
+    panel.addEventListener('input',function(e){var el=e.target;if(el.type==='range'||el.type==='checkbox'||el.tagName==='SELECT')commit()});
+    $('gear').onclick=function(){var o=panel.classList.toggle('open');this.setAttribute('aria-expanded',o);if(o)fill()};
+    $('save').onclick=commit;
+    var cp=$('copy');if(cp)cp.onclick=function(){read();
+      var url=location.origin+location.pathname+'?ui=0&s='+encodeURIComponent(JSON.stringify(S));
+      function done(t){cp.textContent=t;setTimeout(function(){cp.textContent='Copy YoloBox link'},1800)}
+      try{navigator.clipboard.writeText(url).then(function(){done('Copied')},function(){done('Copy blocked here')})}catch(e){done('Copy blocked here')}};
+    addEventListener('keydown',function(e){if(e.key==='Escape')panel.classList.remove('open')});
+    var mt;addEventListener('mousemove',function(){document.body.classList.add('mouse');clearTimeout(mt);mt=setTimeout(function(){if(!panel.classList.contains('open'))document.body.classList.remove('mouse')},3500)});
+    apply();
+    return {S:S,fill:fill,save:save,apply:apply,commit:commit,DEF:DEF,merge:merge};
+  }
+  return {$:$,init:init,fit:fit};
+})();
+(function(){
+  var $=O.$,i=0,timer=null,ST;
+  var ICON=['<svg viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg>',
+            '<svg viewBox="0 0 24 24"><path d="M3 9h18v3H3zM5 13h6v8H5zM13 13h6v8h-6zM12 9C9 9 6.5 7.5 7.5 5.2 8.6 3 11.2 4.6 12 7c.8-2.4 3.4-4 4.5-1.8C17.500 7.500 15 9 12 9z"/></svg>',
+            '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.600 0 0 1 8 3c0 5.800-8 11-8 11z"/></svg>'];
+  var STAR='<svg viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg>';
+  $('stars').innerHTML=STAR+STAR+STAR+STAR+STAR;
+  function fmt(n){return (+n||0).toLocaleString('en-US')}
+  function draw(){
+    var g=ST.goals[i],pct=Math.max(0,Math.min(1,(+g.cur||0)/Math.max(1,+g.tar||1)));
+    $('icon').innerHTML=ICON[i];$('label').textContent=g.label;
+    $('count').innerHTML='';$('count').append(fmt(g.cur)+' ');var s=document.createElement('small');s.textContent='/ '+fmt(g.tar);$('count').appendChild(s);
+    $('fill').style.width=(pct*100)+'%';
+    $('latest').innerHTML='';if(g.latest){$('latest').append('Latest ');var b=document.createElement('b');b.textContent=g.latest;$('latest').appendChild(b)}
+    var on=Math.floor(pct*5+1e-9);[].forEach.call($('stars').children,function(st,k){st.classList.toggle('on',k<on)});
+    $('card').classList.toggle('reached',pct>=1);$('doneS').textContent=g.label+' goal complete';
+  }
+  function show(n){var inner=$('inner');inner.classList.add('out');$('card').classList.remove('reached');
+    setTimeout(function(){i=n;$('fill').style.transition='none';$('fill').style.width='0';void $('fill').offsetWidth;$('fill').style.transition='';draw();inner.classList.remove('out')},400)}
+  var A=O.init('goals-v1',{goals:[{label:'Subs',cur:49,tar:50,latest:'HTownHolla'},{label:'Gifted Subs',cur:12,tar:25,latest:'BigTipTony'},{label:'Followers',cur:135,tar:200,latest:'NewFace_22'}],show:'all',secs:15,size:100,pv:true},function(S){
+    ST=S;$('wrap').style.transform='scale('+S.size/100+')';
+    clearInterval(timer);timer=null;
+    if(S.show==='all'){timer=setInterval(function(){show((i+1)%3)},S.secs*1000)}else{i=+S.show||0}
+    draw();
+  });
+  /* live data plugs in here later: OverlayFeed.goal(0, 50, 'name') */
+  window.OverlayFeed={goal:function(n,cur,latest){var g=A.S.goals[n];if(!g)return;g.cur=cur;if(latest)g.latest=latest;A.save();if(n===i)draw()}};
+})();
+</script>
+</body></html>

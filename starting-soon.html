@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starting Soon / BRB overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#ff4fa3; --pink-deep:#e0257f; --cyan:#7fe9f2; --gold:#ffc46b; --orange:#ff8a4c;
+    --ink:#170b2b; --panel:#1d1230; --line:rgba(255,255,255,.14);
+    --sub: var(--cyan);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  body{font-family:"Barlow Condensed",system-ui,sans-serif;color:#fff}
+  body.letterbox{background:#000}
+
+  /* 1920x1080 stage, scaled to fit whatever loads it */
+  #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;overflow:hidden}
+
+  /* ---------- backdrop (optional) ---------- */
+  #backdrop{position:absolute;inset:0;display:none;
+    background:linear-gradient(180deg,#24104f 0%,#5a1d7a 26%,#c2337f 52%,#ff6f91 70%,#ffb36b 88%,#ffd79a 100%)}
+  body.bg-sunset #backdrop{display:block}
+  #sun{position:absolute;left:1240px;top:330px;width:620px;height:620px;border-radius:50%;
+    background:linear-gradient(180deg,#fff3b0 0%,#ffc46b 34%,#ff7a59 68%,#ff4fa3 100%);
+    -webkit-mask:repeating-linear-gradient(180deg,#000 0 46px,transparent 46px 58px),linear-gradient(#000,#000);
+    -webkit-mask-size:100% 52%,100% 48%;-webkit-mask-position:bottom,top;-webkit-mask-repeat:no-repeat;
+            mask:repeating-linear-gradient(180deg,#000 0 46px,transparent 46px 58px),linear-gradient(#000,#000);
+            mask-size:100% 52%,100% 48%;mask-position:bottom,top;mask-repeat:no-repeat;
+    filter:drop-shadow(0 0 80px rgba(255,150,120,.55))}
+  #haze{position:absolute;left:0;right:0;bottom:0;height:360px;
+    background:linear-gradient(180deg,transparent,rgba(36,16,79,.55) 70%,rgba(23,11,43,.9))}
+  #palms{position:absolute;inset:0;width:100%;height:100%}
+  #palms g{transform-box:fill-box;transform-origin:50% 100%;animation:sway 7s ease-in-out infinite alternate}
+  #palms g:nth-child(2){animation-duration:9s;animation-delay:-3s}
+  @keyframes sway{from{transform:rotate(-1.2deg)}to{transform:rotate(1.4deg)}}
+
+  /* readability scrim when sitting over gameplay */
+  #scrim{position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(15,6,30,.55) 0%,rgba(15,6,30,0) 55%),
+               linear-gradient(0deg,rgba(15,6,30,.6) 0%,rgba(15,6,30,0) 34%)}
+
+  /* ---------- title block ---------- */
+  #titleBlock{position:absolute;left:96px;bottom:250px}
+  #kicker{display:inline-flex;align-items:center;gap:14px;font-weight:700;font-size:30px;letter-spacing:.22em;
+    padding:8px 20px 8px 16px;background:rgba(23,11,43,.72);border:2px solid var(--line);border-radius:999px;margin-bottom:22px}
+  #dot{width:14px;height:14px;border-radius:50%;background:var(--pink);box-shadow:0 0 14px var(--pink);animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.25}}
+  #title{font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-size:214px;line-height:.92;letter-spacing:.01em;text-transform:uppercase;margin:0;
+    background:linear-gradient(180deg,#ffffff 0%,#ffe3f1 45%,#ff9ccb 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 6px 0 var(--pink-deep)) drop-shadow(0 14px 24px rgba(10,3,25,.7))}
+  #subtitle{font-family:"Yellowtail",cursive;font-size:104px;line-height:1;color:var(--sub);margin:-18px 0 0 150px;transform:rotate(-5deg);transform-origin:left center;
+    text-shadow:0 4px 0 rgba(23,11,43,.9),0 0 26px color-mix(in srgb,var(--sub) 55%,transparent);white-space:nowrap}
+
+  /* ---------- countdown ---------- */
+  #clock{position:absolute;right:96px;top:84px;text-align:right}
+  #clockLabel{font-weight:700;font-size:32px;letter-spacing:.24em;color:var(--gold);text-shadow:0 2px 8px rgba(10,3,25,.8)}
+  #time{font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-size:190px;line-height:1;font-variant-numeric:tabular-nums;
+    filter:drop-shadow(0 6px 0 var(--pink-deep)) drop-shadow(0 12px 22px rgba(10,3,25,.7))}
+  #clock.done #time{color:var(--cyan)}
+
+  /* ---------- tip strip + progress ---------- */
+  #tipBar{position:absolute;left:96px;right:96px;bottom:92px;height:104px;display:flex;align-items:stretch;
+    background:rgba(23,11,43,.82);border:2px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(10,3,25,.45)}
+  #tipTag{flex:none;display:flex;align-items:center;padding:0 30px;background:linear-gradient(135deg,var(--pink),var(--orange));
+    font-family:"Anton",sans-serif;font-size:44px;letter-spacing:.06em;color:var(--ink)}
+  #tipText{flex:1;display:flex;align-items:center;padding:0 34px;font-weight:600;font-size:46px;line-height:1.05;transition:opacity .45s, transform .45s}
+  #tipText.out{opacity:0;transform:translateY(14px)}
+  #progress{position:absolute;left:96px;right:96px;bottom:56px;height:12px;border-radius:999px;background:rgba(255,255,255,.2);overflow:hidden}
+  #bar{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--pink) 55%,var(--gold));transition:width 1s linear}
+
+  /* ---------- settings (desktop browser only) ---------- */
+  #gear{position:fixed;top:18px;right:18px;width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:#fff;
+    font-size:24px;cursor:pointer;opacity:0;transition:opacity .3s;z-index:5}
+  body.mouse #gear{opacity:.9}
+  body.noui #gear{display:none}
+  #panel{position:fixed;top:76px;right:18px;width:340px;max-height:calc(100vh - 94px);overflow:auto;padding:18px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.55);display:none;z-index:5;font-size:17px}
+  #panel.open{display:block}
+  #panel h2{margin:0 0 12px;font-size:22px;letter-spacing:.12em;color:var(--pink);border-bottom:1px solid var(--line);padding-bottom:10px}
+  #panel label{display:block;margin:12px 0 6px;font-weight:600;letter-spacing:.12em;font-size:14px;color:#cdbfe0;text-transform:uppercase}
+  .seg{display:flex;gap:8px}
+  .seg button,.row button,#save,#copy{flex:1;font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 6px;border-radius:7px;
+    border:1px solid var(--line);background:#2a1d42;color:#fff;cursor:pointer}
+  .seg button.on{background:var(--pink);border-color:var(--pink);color:var(--ink)}
+  #panel input[type=text],#panel input[type=number],#panel textarea{width:100%;font:inherit;font-weight:500;padding:8px 10px;border-radius:7px;
+    border:1px solid var(--line);background:#120a20;color:#fff}
+  #panel textarea{height:110px;resize:vertical}
+  .row{display:flex;gap:8px}.row input{flex:0 0 74px}
+  #start{background:#2f9e5b}#pause{background:#c6962b}#reset{background:#c8404f}
+  #save{display:block;width:100%;margin-top:14px;background:var(--pink);border-color:var(--pink);color:var(--ink);padding:12px}
+  #copy{display:block;width:100%;margin-top:8px}
+  #note{margin:8px 0 0;font-size:14px;line-height:1.3;color:#b9aacd;font-weight:500}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){#palms g,#dot{animation:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="backdrop">
+    <div id="sun"></div>
+    <svg id="palms" viewBox="0 0 1920 1080" aria-hidden="true">
+      <g fill="none" stroke="#170b2b" stroke-linecap="round">
+        <path d="M1500 1080 C1490 900 1520 720 1580 560" stroke-width="20"/>
+        <path d="M1580 560 q-150 -90 -300 -10 M1580 560 q-130 -160 -290 -150 M1580 560 q-50 -190 -190 -260 M1580 560 q40 -190 170 -240 M1580 560 q140 -140 290 -110 M1580 560 q160 -60 290 40 M1580 560 q110 30 180 150 M1580 560 q-110 20 -200 140" stroke-width="17"/>
+      </g>
+      <g fill="none" stroke="#170b2b" stroke-linecap="round">
+        <path d="M1790 1080 C1800 960 1780 850 1740 760" stroke-width="13"/>
+        <path d="M1740 760 q-100 -60 -200 0 M1740 760 q-80 -110 -190 -100 M1740 760 q-20 -130 -110 -170 M1740 760 q40 -120 130 -150 M1740 760 q100 -80 190 -50 M1740 760 q100 -20 170 60 M1740 760 q-70 20 -130 100" stroke-width="12"/>
+      </g>
+    </svg>
+    <div id="haze"></div>
+  </div>
+  <div id="scrim"></div>
+
+  <div id="clock">
+    <div id="clockLabel">GOING LIVE IN</div>
+    <div id="time">05:00</div>
+  </div>
+
+  <div id="titleBlock">
+    <div id="kicker"><span id="dot"></span><span id="kickerText">STAND BY</span></div>
+    <h1 id="title">Starting Soon</h1>
+    <div id="subtitle">On the Ancestors Time</div>
+  </div>
+
+  <div id="tipBar"><div id="tipTag">TIP</div><div id="tipText"></div></div>
+  <div id="progress"><div id="bar"></div></div>
+</div>
+
+<button id="gear" aria-label="Screen settings" aria-expanded="false">&#9881;</button>
+<div id="panel" role="dialog" aria-label="Screen settings">
+  <h2>SCREEN SETTINGS</h2>
+  <label>Mode</label>
+  <div class="seg" data-key="mode"><button data-v="soon">Starting soon</button><button data-v="brb">Be right back</button></div>
+  <label>Subtitle color</label>
+  <div class="seg" data-key="color"><button data-v="cyan">Cyan</button><button data-v="pink">Pink</button><button data-v="gold">Gold</button></div>
+  <label>Background</label>
+  <div class="seg" data-key="bg"><button data-v="sunset">Sunset</button><button data-v="none">See-through</button></div>
+  <label for="subSoon">Starting soon subtitle</label><input type="text" id="subSoon">
+  <label for="subBrb">Be right back subtitle</label><input type="text" id="subBrb">
+  <label for="mins">Countdown (minutes)</label>
+  <div class="row"><input type="number" id="mins" min="1" max="180"><button id="start">Start</button><button id="pause">Pause</button><button id="reset">Reset</button></div>
+  <label for="tips">Rotating tips (one per line)</label><textarea id="tips"></textarea>
+  <button id="save">Save &amp; apply</button>
+  <button id="copy">Copy YoloBox link</button>
+  <p id="note">The link carries these settings. Paste it into a Web URL Overlay on the YoloBox; the countdown starts when the overlay loads.</p>
+</div>
+
+<script>
+(function(){
+  var DEFAULTS={mode:'soon',color:'cyan',bg:'sunset',subSoon:'On the Ancestors Time',subBrb:'Grabbing a Quick Break',mins:5,
+    tips:['Keep it respectful in chat. Everybody is welcome here.','Drop a follow so you never miss a session.','Grab a drink and get settled. We go live shortly.','Say where you are watching from in chat.']};
+  var COLORS={cyan:'var(--cyan)',pink:'var(--pink)',gold:'var(--gold)'};
+  var KEY='ss-brb-settings-v1';
+  var $=function(id){return document.getElementById(id)};
+
+  function load(){
+    var s=JSON.parse(JSON.stringify(DEFAULTS));
+    try{var saved=JSON.parse(localStorage.getItem(KEY)||'null'); if(saved) Object.assign(s,saved);}catch(e){}
+    var q=new URLSearchParams(location.search);
+    ['mode','color','bg','subSoon','subBrb'].forEach(function(k){ if(q.get(k)) s[k]=q.get(k); });
+    if(q.get('mins')) s.mins=+q.get('mins');
+    if(q.get('tips')) s.tips=q.get('tips').split('|');
+    if(q.get('ui')==='0') document.body.classList.add('noui');
+    var h=location.hash.replace('#','');
+    if(h==='brb'||h==='soon') s.mode=h;
+    if(!COLORS[s.color]) s.color='cyan';
+    s.mins=Math.min(180,Math.max(1,Math.round(s.mins)||5));
+    s.tips=(s.tips||[]).filter(function(t){return t&&t.trim()});
+    return s;
+  }
+  var S=load();
+
+  /* scale the 1920x1080 stage to the frame */
+  function fit(){
+    var k=Math.min(innerWidth/1920,innerHeight/1080);
+    $('stage').style.transform='translate(-50%,-50%) scale('+k+')';
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---- countdown ---- */
+  var total=S.mins*60, left=total, running=true, last=Date.now();
+  function pad(n){return (n<10?'0':'')+n}
+  function drawClock(){
+    var sec=Math.max(0,Math.ceil(left));
+    $('time').textContent=pad(Math.floor(sec/60))+':'+pad(sec%60);
+    $('bar').style.width=(100*(1-left/total)).toFixed(2)+'%';
+    var done=left<=0;
+    $('clock').classList.toggle('done',done);
+    $('clockLabel').textContent=done?'ANY SECOND NOW':(S.mode==='brb'?'BACK IN':'GOING LIVE IN');
+  }
+  setInterval(function(){
+    var now=Date.now(), dt=(now-last)/1000; last=now;
+    if(running&&left>0){ left=Math.max(0,left-dt); drawClock(); }
+  },250);
+
+  /* ---- tips ---- */
+  var tipI=0, tipTimer=null;
+  function showTip(){
+    var el=$('tipText');
+    if(!S.tips.length){ $('tipBar').style.display='none'; return; }
+    $('tipBar').style.display='flex';
+    el.classList.add('out');
+    setTimeout(function(){ el.textContent=S.tips[tipI%S.tips.length]; tipI++; el.classList.remove('out'); },450);
+  }
+  function startTips(){ clearInterval(tipTimer); tipI=0; $('tipText').textContent=''; showTip(); tipTimer=setInterval(showTip,8000); }
+
+  /* ---- apply ---- */
+  function apply(){
+    var brb=S.mode==='brb';
+    $('title').textContent=brb?'Be Right Back':'Starting Soon';
+    $('subtitle').textContent=brb?S.subBrb:S.subSoon;
+    $('kickerText').textContent=brb?'SHORT BREAK':'STAND BY';
+    document.documentElement.style.setProperty('--sub',COLORS[S.color]);
+    document.body.classList.toggle('bg-sunset',S.bg==='sunset');
+    document.body.classList.toggle('letterbox',S.bg==='sunset');
+    drawClock();
+  }
+  function resetClock(){ total=S.mins*60; left=total; last=Date.now(); drawClock(); }
+
+  /* ---- panel ---- */
+  function fill(){
+    document.querySelectorAll('.seg').forEach(function(seg){
+      seg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.v===S[seg.dataset.key]); });
+    });
+    $('subSoon').value=S.subSoon; $('subBrb').value=S.subBrb; $('mins').value=S.mins; $('tips').value=S.tips.join('\n');
+  }
+  function read(){
+    S.subSoon=$('subSoon').value.trim()||DEFAULTS.subSoon;
+    S.subBrb=$('subBrb').value.trim()||DEFAULTS.subBrb;
+    var m=Math.min(180,Math.max(1,Math.round(+$('mins').value)||5)), changed=m!==S.mins; S.mins=m;
+    S.tips=$('tips').value.split('\n').map(function(t){return t.trim()}).filter(Boolean);
+    return changed;
+  }
+  function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+  document.querySelectorAll('.seg').forEach(function(seg){
+    seg.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      S[seg.dataset.key]=b.dataset.v; fill(); apply(); save();
+    });
+  });
+  $('gear').onclick=function(){ var o=$('panel').classList.toggle('open'); this.setAttribute('aria-expanded',o); if(o) fill(); };
+  $('save').onclick=function(){ var c=read(); if(c) resetClock(); apply(); startTips(); save(); fill(); };
+  $('start').onclick=function(){ if(left<=0) resetClock(); running=true; last=Date.now(); };
+  $('pause').onclick=function(){ running=false; };
+  $('reset').onclick=function(){ read(); resetClock(); running=false; };
+  $('copy').onclick=function(){
+    read();
+    var q=new URLSearchParams({mode:S.mode,color:S.color,bg:S.bg,subSoon:S.subSoon,subBrb:S.subBrb,mins:S.mins,tips:S.tips.join('|'),ui:'0'});
+    var url=location.origin+location.pathname+'?'+q.toString(), btn=this;
+    function done(t){ btn.textContent=t; setTimeout(function(){btn.textContent='Copy YoloBox link'},1800); }
+    try{ navigator.clipboard.writeText(url).then(function(){done('Copied')},function(){done('Copy blocked here')}); }catch(e){ done('Copy blocked here'); }
+  };
+  addEventListener('keydown',function(e){ if(e.key==='Escape') $('panel').classList.remove('open'); });
+
+  /* gear only appears when a mouse is present, so it never shows on the YoloBox */
+  var mt; addEventListener('mousemove',function(){ document.body.classList.add('mouse'); clearTimeout(mt);
+    mt=setTimeout(function(){ if(!$('panel').classList.contains('open')) document.body.classList.remove('mouse'); },3500); });
+
+  apply(); startTips();
+})();
+</script>
+</body>
+</html>
