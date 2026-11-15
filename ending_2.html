@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stream ending MVPs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#ff4fa3;--pink-deep:#e0257f;--cyan:#7fe9f2;--gold:#ffc46b;--orange:#ff8a4c;--ink:#170b2b;--panel:#1d1230;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{font-family:"Barlow Condensed",system-ui,sans-serif;color:#fff}
+.display{font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-weight:400}
+body.pv{background:linear-gradient(160deg,#24104f 0%,#5a1d7a 38%,#b8306f 72%,#ff8a6b 100%)}
+#gear{position:fixed;top:18px;right:18px;width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:#fff;font-size:24px;cursor:pointer;opacity:0;transition:opacity .3s;z-index:50}
+body.mouse #gear{opacity:.9} body.noui #gear,body.noui #panel{display:none!important}
+#panel{position:fixed;top:76px;right:18px;width:360px;max-width:calc(100vw - 36px);max-height:calc(100vh - 94px);overflow:auto;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.55);display:none;z-index:50;font-size:17px}
+#panel.open{display:block}
+#panel h2{margin:0 0 12px;font-size:22px;letter-spacing:.12em;color:var(--pink);border-bottom:1px solid var(--line);padding-bottom:10px}
+#panel h3{margin:16px 0 0;font-size:16px;letter-spacing:.14em;color:var(--cyan)}
+#panel label{display:block;margin:12px 0 6px;font-weight:600;letter-spacing:.12em;font-size:14px;color:#cdbfe0;text-transform:uppercase}
+#panel label.chk{display:flex;align-items:center;gap:8px}
+.seg,.row{display:flex;gap:8px}
+.seg button,.btn{flex:1;font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 6px;border-radius:7px;border:1px solid var(--line);background:#2a1d42;color:#fff;cursor:pointer}
+.seg button.on,#save{background:var(--pink);border-color:var(--pink);color:var(--ink)}
+#panel input[type=text],#panel input[type=number],#panel textarea,#panel select{width:100%;min-width:0;font:inherit;font-weight:500;padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:#120a20;color:#fff}
+#panel input[type=range]{width:100%;accent-color:var(--pink)}
+#panel textarea{height:110px;resize:vertical}
+#save,#copy,#clear{display:block;width:100%;margin-top:10px;padding:12px}
+#note{margin:8px 0 0;font-size:14px;line-height:1.3;color:#b9aacd;font-weight:500}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+body.letterbox{background:#000}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;overflow:hidden}
+#backdrop{position:absolute;inset:0;display:none;background:linear-gradient(180deg,#24104f 0%,#5a1d7a 26%,#c2337f 52%,#ff6f91 70%,#ffb36b 88%,#ffd79a 100%)}
+body.bg-sunset #backdrop{display:block}
+#sun{position:absolute;left:610px;top:380px;width:700px;height:700px;border-radius:50%;background:linear-gradient(180deg,#fff3b0 0%,#ffc46b 34%,#ff7a59 68%,#ff4fa3 100%);
+  -webkit-mask:repeating-linear-gradient(180deg,#000 0 46px,transparent 46px 58px),linear-gradient(#000,#000);-webkit-mask-size:100% 52%,100% 48%;-webkit-mask-position:bottom,top;-webkit-mask-repeat:no-repeat;
+  mask:repeating-linear-gradient(180deg,#000 0 46px,transparent 46px 58px),linear-gradient(#000,#000);mask-size:100% 52%,100% 48%;mask-position:bottom,top;mask-repeat:no-repeat;filter:drop-shadow(0 0 80px rgba(255,150,120,.55));opacity:.9}
+#haze{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(23,11,43,.55) 0%,rgba(23,11,43,.15) 45%,rgba(23,11,43,.6) 100%)}
+#scrim{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(15,6,30,.5) 0%,rgba(15,6,30,0) 45%)}
+#center{position:absolute;left:560px;width:800px;top:540px;transform:translateY(-50%);text-align:center}
+#t1{font-size:128px;line-height:.95;text-transform:uppercase;margin:0;background:linear-gradient(180deg,#fff 0%,#ffe3f1 45%,#ff9ccb 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 5px 0 var(--pink-deep)) drop-shadow(0 12px 22px rgba(10,3,25,.7))}
+#t2{font-family:"Yellowtail",cursive;font-size:84px;line-height:1;color:var(--cyan);transform:rotate(-4deg);margin-top:4px;text-shadow:0 4px 0 rgba(23,11,43,.9),0 0 26px rgba(127,233,242,.5);white-space:nowrap}
+.mvp{position:absolute;width:340px;margin:-110px 0 0 -170px;border-radius:14px;overflow:hidden;background:rgba(23,11,43,.84);border:2px solid var(--line);box-shadow:0 18px 40px rgba(10,3,25,.5);text-align:center;
+  transition:opacity .5s,transform .5s cubic-bezier(.2,.9,.3,1.3),border-color .5s,box-shadow .5s}
+.mvp.pre{opacity:0;transform:scale(.7)}
+.mvp.hot{transform:scale(1.09);border-color:var(--gold);box-shadow:0 0 44px rgba(255,196,107,.6)}
+.mvp .ic{width:52px;height:52px;margin:18px auto 6px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--pink),var(--orange))}
+.mvp .ic svg{width:32px;height:32px;fill:var(--ink)}
+.mvp .nm{font-size:44px;line-height:1.05;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.mvp .st{font-weight:700;font-size:28px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase;margin:2px 0 14px}
+.mvp .lb{font-weight:700;font-size:26px;letter-spacing:.16em;text-transform:uppercase;padding:8px;background:linear-gradient(90deg,var(--pink),var(--orange));color:var(--ink)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+@media (prefers-reduced-motion:reduce){.mvp{transition:none}}
+</style></head>
+<body>
+<div id="stage">
+  <div id="backdrop"><div id="sun"></div><div id="haze"></div></div><div id="scrim"></div>
+  <div id="center"><h1 id="t1" class="display"></h1><div id="t2"></div></div>
+  <div id="cards"></div>
+</div>
+<button id="gear" aria-label="Ending screen settings" aria-expanded="false">&#9881;</button>
+<div id="panel" role="dialog" aria-label="Ending screen settings">
+  <h2>SESSION MVPS</h2>
+  <label>Background</label><div class="seg" data-k="bg"><button data-v="sunset">Sunset</button><button data-v="none">See-through</button></div>
+  <label>Title</label><input type="text" data-k="title"><label>Subtitle</label><input type="text" data-k="sub">
+  <label for="relay">Relay address</label><input type="text" id="relay" data-k="relay" placeholder="https://kick-relay.yourname.workers.dev">
+  <div id="rows"></div>
+  <button id="save" class="btn">Save &amp; apply</button><button id="clear" class="btn">Clear names &amp; stats</button><button id="copy" class="btn">Copy YoloBox link</button>
+  <p id="note">Names and stats are typed in by hand until you paste your relay address.</p>
+</div>
+<script>
+var O=(function(){
+  var $=function(i){return document.getElementById(i)};
+  function get(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+  function set(o,p,v){var ks=p.split('.'),l=ks.pop();ks.reduce(function(a,k){return a[k]},o)[l]=v}
+  function merge(a,b){for(var k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')merge(a[k],b[k]);else a[k]=b[k]}return a}
+  function fit(el,w,h){function f(){var k=Math.min(innerWidth/w,innerHeight/h);el.style.transform='translate(-50%,-50%) scale('+k+')'}addEventListener('resize',f);f()}
+  function init(KEY,DEF,onApply){
+    var S=JSON.parse(JSON.stringify(DEF)),panel=$('panel'),noui=false;
+    try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv)merge(S,sv)}catch(e){}
+    var q=new URLSearchParams(location.search);
+    try{if(q.get('s'))merge(S,JSON.parse(q.get('s')))}catch(e){}
+    if(q.get('ui')==='0'){noui=true;document.body.classList.add('noui')}
+    var fields=panel.querySelectorAll('[data-k]');
+    function fill(){fields.forEach(function(el){var v=get(S,el.dataset.k);
+      if(el.classList.contains('seg'))el.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.v===String(v))});
+      else if(el.type==='checkbox')el.checked=!!v;
+      else if(el.hasAttribute('data-lines'))el.value=(v||[]).join('\n');
+      else el.value=v==null?'':v;
+      var out=el.dataset.out&&$(el.dataset.out);if(out)out.textContent=el.value})}
+    function read(){fields.forEach(function(el){var k=el.dataset.k;
+      if(el.classList.contains('seg'))return;
+      if(el.type==='checkbox')set(S,k,el.checked);
+      else if(el.type==='number'||el.type==='range'){var n=+el.value;if(isFinite(n))set(S,k,Math.max(+(el.min||-1e9),Math.min(+(el.max||1e9),n)))}
+      else if(el.hasAttribute('data-lines'))set(S,k,el.value.split('\n').map(function(t){return t.trim()}).filter(Boolean));
+      else set(S,k,el.value.trim())})}
+    function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    function apply(){document.body.classList.toggle('pv',!!S.pv&&!noui);onApply(S)}
+    function commit(){read();apply();save();fill()}
+    panel.addEventListener('click',function(e){var b=e.target.closest('.seg button');if(!b)return;read();set(S,b.parentNode.dataset.k,b.dataset.v);apply();save();fill()});
+    panel.addEventListener('input',function(e){var el=e.target;if(el.type==='range'||el.type==='checkbox'||el.tagName==='SELECT')commit()});
+    $('gear').onclick=function(){var o=panel.classList.toggle('open');this.setAttribute('aria-expanded',o);if(o)fill()};
+    $('save').onclick=commit;
+    var cp=$('copy');if(cp)cp.onclick=function(){read();
+      var url=location.origin+location.pathname+'?ui=0&s='+encodeURIComponent(JSON.stringify(S));
+      function done(t){cp.textContent=t;setTimeout(function(){cp.textContent='Copy YoloBox link'},1800)}
+      try{navigator.clipboard.writeText(url).then(function(){done('Copied')},function(){done('Copy blocked here')})}catch(e){done('Copy blocked here')}};
+    addEventListener('keydown',function(e){if(e.key==='Escape')panel.classList.remove('open')});
+    var mt;addEventListener('mousemove',function(){document.body.classList.add('mouse');clearTimeout(mt);mt=setTimeout(function(){if(!panel.classList.contains('open'))document.body.classList.remove('mouse')},3500)});
+    apply();
+    return {S:S,fill:fill,save:save,apply:apply,commit:commit,DEF:DEF,merge:merge};
+  }
+  /* read the relay every 4s; cb(data) on success, cb(null) on failure */
+  function live(getUrl,cb){var last=-1,cur=null;
+    function tick(){var u=String(getUrl()||'').trim().replace(/\/+$/,'');if(u!==cur){cur=u;last=-1}if(!u){cb(null,'off');return}
+      fetch(u+'/state?after='+last).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){if(u!==cur)return;last=d.last;cb(d)}).catch(function(){if(u===cur)cb(null,'error')})}
+    setInterval(tick,4000);tick()}
+  return {$:$,init:init,fit:fit,live:live};
+})();
+(function(){
+  var $=O.$,P='<svg viewBox="0 0 24 24"><path d="',E='"/></svg>';
+  var IC=[P+'M4 4h16v12H9l-5 4z'+E,P+'M3 9h18v3H3zM5 13h6v8H5zM13 13h6v8h-6zM12 9C9 9 6.5 7.5 7.5 5.2 8.6 3 11.2 4.6 12 7c.8-2.4 3.4-4 4.5-1.8C17.5 7.5 15 9 12 9z'+E,
+          P+'M12 2l9 8-9 12L3 10z'+E,P+'M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z'+E,
+          P+'M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.800-8 11-8 11z'+E,P+'M13 2L5 13h5l-1 9 8-12h-5z'+E];
+  var L=null;var DEF={relay:'',bg:'sunset',title:'Thanks for Watching',sub:'See You Next Stream',pv:false,cards:[
+    {label:'Top Chatter',name:'',stat:'0 msgs'},{label:'Top Gifter',name:'',stat:'0 gifted'},{label:'Top Supporter',name:'',stat:'0 kicks'},
+    {label:'Newest Sub',name:'',stat:'Latest'},{label:'Newest Follow',name:'',stat:'Latest'},{label:'Top Host',name:'',stat:'0 viewers'}]};
+  /* card i sits at angle -90 + 60*i on an ellipse round the title */
+  var rows='';DEF.cards.forEach(function(c,i){rows+='<h3>'+c.label.toUpperCase()+'</h3><div class="g"><input type="text" placeholder="Username" aria-label="'+c.label+' name" data-k="cards.'+i+'.name"><input type="text" placeholder="Stat" aria-label="'+c.label+' stat" data-k="cards.'+i+'.stat"></div>'});
+  $('rows').innerHTML=rows;
+  var els=DEF.cards.map(function(c,i){var a=(-90+60*i)*Math.PI/180,el=document.createElement('div');el.className='mvp pre';setTimeout(function(){el.classList.remove('pre')},200+150*i);
+    el.style.left=(960+680*Math.cos(a))+'px';el.style.top=(540+370*Math.sin(a))+'px';
+    el.innerHTML='<div class="ic">'+IC[i]+'</div><div class="nm display"></div><div class="st"></div><div class="lb"></div>';$('cards').appendChild(el);return el});
+  var A=O.init('ending-v1',DEF,function(S){
+    document.body.classList.toggle('bg-sunset',S.bg==='sunset');document.body.classList.toggle('letterbox',S.bg==='sunset');
+    $('t1').textContent=S.title;$('t2').textContent=S.sub;
+    var lv=[null,null,null,null,null,null],f=function(n){return (+n||0).toLocaleString('en-US')};
+    if(L){if(L.top.chat)lv[0]=[L.top.chat.user,f(L.top.chat.n)+' msgs'];if(L.top.gift)lv[1]=[L.top.gift.user,f(L.top.gift.n)+' gifted'];if(L.top.kicks)lv[2]=[L.top.kicks.user,f(L.top.kicks.n)+' kicks'];
+      if(L.latest.sub)lv[3]=[L.latest.sub,'Latest'];if(L.latest.follow)lv[4]=[L.latest.follow,'Latest']}
+    S.cards.forEach(function(c,i){var el=els[i],v=(!c.name&&lv[i])||[c.name,c.stat];el.querySelector('.nm').textContent=v[0]||'--';el.querySelector('.st').textContent=v[1];el.querySelector('.lb').textContent=c.label});
+  });
+  O.fit($('stage'),1920,1080);
+  $('clear').onclick=function(){A.S.cards.forEach(function(c,i){c.name='';c.stat=DEF.cards[i].stat});A.apply();A.save();A.fill()};
+  var h=0;setTimeout(function(){setInterval(function(){els.forEach(function(e,i){e.classList.toggle('hot',i===h)});h=(h+1)%6},2400)},1400);
+  /* live: any card left blank fills in from the relay; a name typed by hand wins */
+  O.live(function(){return A.S.relay},function(d,why){var n=$('note');
+    if(d){L=d;A.apply();if(n)n.textContent='Connected to your Kick relay. Blank cards fill in on their own; anything you type here wins. Top Host is always typed by hand.'}
+    else{if(n)n.textContent=why==='off'?'Names and stats are typed in by hand until you paste your relay address.':'Cannot reach the relay at that address. Retrying...'}});
+})();
+</script>
+</body></html>
