@@ -54,11 +54,11 @@ body.right .msg{animation-name:inR}@keyframes inR{from{opacity:0;transform:trans
   <label for="size">Text size <span id="sizeOut"></span>%</label><input type="range" id="size" data-k="size" data-out="sizeOut" min="60" max="180" step="5">
   <label for="max">Messages on screen</label><input type="number" id="max" data-k="max" min="1" max="12">
   <label for="hold">Hide each message after (seconds, 0 = never)</label><input type="number" id="hold" data-k="hold" min="0" max="600">
-  <label for="chan">Kick channel name</label><input type="text" id="chan" data-k="channel" placeholder="yourchannel">
+  <label for="room">Kick chatroom ID</label><input type="text" id="room" data-k="room" inputmode="numeric" placeholder="numbers only">
   <label class="chk"><input type="checkbox" data-k="demo"> Show sample messages</label>
   <label class="chk"><input type="checkbox" data-k="pv"> Preview backdrop</label>
   <button id="save" class="btn">Save &amp; apply</button><button id="copy" class="btn">Copy YoloBox link</button>
-  <p id="note">Live Kick chat is not connected yet, so this shows sample messages. The channel name is saved for when it is.</p>
+  <p id="note">Enter your Kick chatroom ID to show live chat. Until then this shows sample messages.</p>
 </div>
 <script>
 var O=(function(){
@@ -122,14 +122,37 @@ var O=(function(){
   }
   function drop(el){if(!el.parentNode)return;el.classList.add('out');setTimeout(function(){el.remove()},600)}
   function trim(){var live=feed.querySelectorAll('.msg:not(.out)');for(var i=0;i<live.length-A.S.max;i++)drop(live[i])}
-  var A=O.init('chat-v1',{side:'left',size:100,max:5,hold:0,channel:'',demo:true,pv:true},function(S){
+  /* ---- live Kick chat: reads the same public chat feed kick.com uses (unofficial, no login) ---- */
+  var KICK_WS='wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false';
+  var ws=null,wsRoom='',retry=0,retryT=null,live=false;
+  function status(t){var n=O.$('note');if(n)n.textContent=t}
+  function clean(t){return String(t||'').replace(/\[emote:\d+:([^\]]+)\]/g,':$1:')}
+  function roleOf(sender){var b=(sender&&sender.identity&&sender.identity.badges)||[],r='';
+    b.forEach(function(x){var t=x&&x.type;if(t==='moderator'||t==='broadcaster')r='mod';else if(!r&&t==='vip')r='vip';else if(!r&&t==='og')r='og';else if(!r&&(t==='subscriber'||t==='founder'||t==='sub_gifter'))r='sub'});return r}
+  function connect(room){
+    clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}
+    wsRoom=room;live=false;if(!room){status('Enter your Kick chatroom ID to show live chat. Until then this shows sample messages.');return}
+    status('Connecting to Kick chat...');
+    try{ws=new WebSocket(KICK_WS)}catch(e){status('Could not open a connection to Kick chat.');return}
+    ws.onmessage=function(ev){var m;try{m=JSON.parse(ev.data)}catch(e){return}
+      if(m.event==='pusher:connection_established'){ws.send(JSON.stringify({event:'pusher:subscribe',data:{auth:'',channel:'chatrooms.'+room+'.v2'}}))}
+      else if(m.event==='pusher:ping'){ws.send(JSON.stringify({event:'pusher:pong',data:{}}))}
+      else if(m.event==='pusher_internal:subscription_succeeded'){live=true;retry=0;status('Connected to Kick chat (chatroom '+room+').');clearInterval(demoT);demoT=null}
+      else if(m.event==='App\\Events\\ChatMessageEvent'){var d;try{d=typeof m.data==='string'?JSON.parse(m.data):m.data}catch(e){return}
+        if(d&&d.sender&&d.sender.username)add({user:d.sender.username,text:clean(d.content),role:roleOf(d.sender)})}};
+    ws.onclose=function(){live=false;status('Kick chat disconnected. Reconnecting...');retryT=setTimeout(function(){connect(room)},Math.min(30000,2000*Math.pow(2,retry++)))};
+    ws.onerror=function(){try{ws.close()}catch(e){}};
+  }
+  var A=O.init('chat-v1',{side:'left',size:100,max:5,hold:0,channel:'',room:'',demo:true,pv:true},function(S){
     document.body.classList.toggle('right',S.side==='right');
     feed.style.setProperty('--z',S.size/100);
     clearInterval(demoT);demoT=null;
-    if(S.demo){demoT=setInterval(function(){add(DEMO[di++%DEMO.length])},2600)}
+    var room=String(S.room||'').replace(/\D/g,'');
+    if(room!==wsRoom||(!ws&&room))connect(room);
+    if(S.demo&&!live){demoT=setInterval(function(){add(DEMO[di++%DEMO.length])},2600)}
     if(feed)setTimeout(trim,0);
   });
-  if(A.S.demo){add(DEMO[di++]);add(DEMO[di++])}
+  if(A.S.demo&&!A.S.room){add(DEMO[di++]);add(DEMO[di++])}
   /* live data plugs in here later */
   window.OverlayFeed={chat:function(user,text,role){add({user:user,text:text,role:role})},event:function(kind,user,text){add({event:kind,user:user,text:text})}};
 })();
