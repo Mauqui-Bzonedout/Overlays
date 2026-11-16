@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talking head overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#ff4fa3;--pink-deep:#e0257f;--cyan:#7fe9f2;--gold:#ffc46b;--orange:#ff8a4c;--ink:#170b2b;--panel:#1d1230;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{font-family:"Barlow Condensed",system-ui,sans-serif;color:#fff}
+.display{font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-weight:400}
+body.pv{background:linear-gradient(160deg,#24104f 0%,#5a1d7a 38%,#b8306f 72%,#ff8a6b 100%)}
+#gear{position:fixed;top:18px;right:18px;width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:#fff;font-size:24px;cursor:pointer;opacity:0;transition:opacity .3s;z-index:50}
+body.mouse #gear{opacity:.9} body.noui #gear,body.noui #panel{display:none!important}
+#panel{position:fixed;top:76px;right:18px;width:360px;max-width:calc(100vw - 36px);max-height:calc(100vh - 94px);overflow:auto;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.55);display:none;z-index:50;font-size:17px}
+#panel.open{display:block}
+#panel h2{margin:0 0 12px;font-size:22px;letter-spacing:.12em;color:var(--pink);border-bottom:1px solid var(--line);padding-bottom:10px}
+#panel h3{margin:16px 0 0;font-size:16px;letter-spacing:.14em;color:var(--cyan)}
+#panel label{display:block;margin:12px 0 6px;font-weight:600;letter-spacing:.12em;font-size:14px;color:#cdbfe0;text-transform:uppercase}
+#panel label.chk{display:flex;align-items:center;gap:8px}
+.seg,.row{display:flex;gap:8px}
+.seg button,.btn{flex:1;font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 6px;border-radius:7px;border:1px solid var(--line);background:#2a1d42;color:#fff;cursor:pointer}
+.seg button.on,#save{background:var(--pink);border-color:var(--pink);color:var(--ink)}
+#panel input[type=text],#panel input[type=number],#panel textarea,#panel select{width:100%;min-width:0;font:inherit;font-weight:500;padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:#120a20;color:#fff}
+#panel input[type=range]{width:100%;accent-color:var(--pink)}
+#panel textarea{height:110px;resize:vertical}
+#save,#copy,#clear{display:block;width:100%;margin-top:10px;padding:12px}
+#note{margin:8px 0 0;font-size:14px;line-height:1.3;color:#b9aacd;font-weight:500}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+body.letterbox{background:#000}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;overflow:hidden}
+#shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(15,6,30,.62) 0%,rgba(15,6,30,0) 30%),linear-gradient(180deg,rgba(15,6,30,.4) 0%,rgba(15,6,30,0) 22%)}
+.glass{background:rgba(23,11,43,.8);border:2px solid var(--line);border-radius:16px;box-shadow:0 18px 40px rgba(10,3,25,.45)}
+#topic{position:absolute;left:56px;top:48px;width:620px;padding:20px 26px 22px 34px;overflow:hidden}
+#topic::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(180deg,var(--cyan),var(--pink),var(--gold))}
+.lbl{display:flex;align-items:center;gap:12px;font-weight:700;font-size:22px;letter-spacing:.22em;color:var(--gold)}
+.livechip{font-size:17px;letter-spacing:.14em;padding:2px 10px;border-radius:6px;background:linear-gradient(135deg,var(--pink),var(--orange));color:var(--ink);display:inline-flex;align-items:center;gap:7px}
+.livechip i{width:9px;height:9px;border-radius:50%;background:var(--ink);animation:bl 1.6s ease-in-out infinite}@keyframes bl{50%{opacity:.2}}
+#topicText{margin-top:8px;font-weight:600;font-size:38px;line-height:1.1;overflow-wrap:anywhere}
+#goal{margin-top:18px;padding-top:16px;border-top:2px solid var(--line);transition:opacity .4s}
+#goal.out{opacity:0}
+#gTop{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+#gLabel{font-size:32px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gCount{font-size:32px;white-space:nowrap}#gCount small{font-size:.66em;color:var(--cyan)}
+#gTrack{margin-top:10px;height:12px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden}
+#gFill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--pink) 55%,var(--gold));transition:width .9s cubic-bezier(.2,.8,.2,1)}
+#gLatest{margin-top:10px;font-weight:700;font-size:21px;letter-spacing:.1em;text-transform:uppercase;color:#d9cdea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gLatest b{color:var(--gold)}
+#tag{position:absolute;left:56px;bottom:52px;max-width:1100px}
+#tagName{font-size:112px;line-height:.95;text-transform:uppercase;margin:0;white-space:nowrap;background:linear-gradient(180deg,#fff 0%,#ffe3f1 45%,#ff9ccb 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 5px 0 var(--pink-deep)) drop-shadow(0 12px 22px rgba(10,3,25,.7))}
+#tagSub{font-family:"Yellowtail",cursive;font-size:62px;line-height:1;color:var(--cyan);transform:rotate(-4deg);transform-origin:left center;margin:2px 0 0 60px;white-space:nowrap;text-shadow:0 4px 0 rgba(23,11,43,.9),0 0 22px rgba(127,233,242,.5)}
+#feed{position:absolute;right:56px;top:48px;bottom:60px;width:470px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;font-size:24px;overflow:hidden}
+.msg{border-radius:.42em;overflow:hidden;box-shadow:0 .4em 1em rgba(10,3,25,.45);animation:inR .45s cubic-bezier(.2,.9,.3,1.2) both;transition:opacity .6s;border-right:.2em solid var(--acc,var(--cyan));flex:none}
+.msg.out{opacity:0}@keyframes inR{from{opacity:0;transform:translateX(1.4em)}to{opacity:1;transform:none}}
+.head{display:flex;align-items:center;gap:.5em;padding:.2em .6em;background:rgba(23,11,43,.92)}
+.name{flex:1;font-weight:700;font-size:.92em;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{flex:none;font-weight:700;font-size:.62em;letter-spacing:.1em;padding:.1em .5em;border-radius:.3em;background:var(--acc);color:var(--ink)}
+.pf{flex:none;font-weight:700;font-size:.56em;letter-spacing:.1em;padding:.12em .45em;border-radius:.3em}.pf.kick{background:#53fc18;color:#0b0b0b}.pf.twitch{background:#9146ff;color:#fff}
+.text{padding:.32em .6em .4em;background:rgba(52,30,84,.78);font-weight:600;line-height:1.12;overflow-wrap:anywhere}
+.msg.mod{--acc:#fff}.msg.vip{--acc:var(--cyan)}.msg.sub{--acc:var(--pink)}.msg.og{--acc:var(--gold)}
+.msg.event{--acc:var(--gold);border:0}.msg.event .head{background:linear-gradient(90deg,var(--pink),var(--orange));color:var(--ink)}.msg.event .chip{background:var(--ink);color:#fff}
+.msg.event .text{background:rgba(23,11,43,.92);text-transform:uppercase;font-size:.84em;letter-spacing:.05em;color:var(--gold)}
+.hide{display:none!important}
+</style></head>
+<body>
+<div id="stage">
+  <div id="shade"></div>
+  <div id="topic" class="glass">
+    <div class="lbl"><span id="topicLbl">CURRENT TOPIC</span><span class="livechip"><i></i>LIVE</span></div>
+    <div id="topicText"></div>
+    <div id="goal"><div id="gTop"><div id="gLabel" class="display"></div><div id="gCount" class="display"></div></div><div id="gTrack"><div id="gFill"></div></div><div id="gLatest"></div></div>
+  </div>
+  <div id="feed"></div>
+  <div id="tag"><h1 id="tagName" class="display"></h1><div id="tagSub"></div></div>
+</div>
+<button id="gear" aria-label="Talking head settings" aria-expanded="false">&#9881;</button>
+<div id="panel" role="dialog" aria-label="Talking head settings">
+  <h2>TALKING HEAD</h2>
+  <label for="t_topic">Current topic</label><textarea id="t_topic" data-k="topic" style="height:70px"></textarea>
+  <label for="t_name">Name</label><input type="text" id="t_name" data-k="name">
+  <label for="t_sub">Line under the name</label><input type="text" id="t_sub" data-k="sub">
+  <label>Chat from</label><div class="seg" data-k="src"><button data-v="all">Both</button><button data-v="kick">Kick</button><button data-v="twitch">Twitch</button></div>
+  <label class="chk"><input type="checkbox" data-k="showChat"> Show chat</label>
+  <label class="chk"><input type="checkbox" data-k="showGoal"> Show goal under the topic</label>
+  <label for="t_max">Chat messages on screen</label><input type="number" id="t_max" data-k="max" min="1" max="10">
+  <label for="relay">Relay address</label><input type="text" id="relay" data-k="relay" placeholder="https://kick-relay.yourname.workers.dev">
+  <label class="chk"><input type="checkbox" data-k="pv"> Preview backdrop</label>
+  <button id="save" class="btn">Save &amp; apply</button><button id="copy" class="btn">Copy YoloBox link</button>
+  <p id="note">Paste your relay address to show live chat and goals. Until then this shows samples.</p>
+</div>
+<script>
+var O=(function(){
+  var $=function(i){return document.getElementById(i)};
+  function get(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+  function set(o,p,v){var ks=p.split('.'),l=ks.pop();ks.reduce(function(a,k){return a[k]},o)[l]=v}
+  function merge(a,b){for(var k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')merge(a[k],b[k]);else a[k]=b[k]}return a}
+  function fit(el,w,h){function f(){var k=Math.min(innerWidth/w,innerHeight/h);el.style.transform='translate(-50%,-50%) scale('+k+')'}addEventListener('resize',f);f()}
+  function init(KEY,DEF,onApply){
+    var S=JSON.parse(JSON.stringify(DEF)),panel=$('panel'),noui=false;
+    try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv)merge(S,sv)}catch(e){}
+    var q=new URLSearchParams(location.search);
+    try{if(q.get('s'))merge(S,JSON.parse(q.get('s')))}catch(e){}
+    if(q.get('ui')==='0'){noui=true;document.body.classList.add('noui')}
+    var fields=panel.querySelectorAll('[data-k]');
+    function fill(){fields.forEach(function(el){var v=get(S,el.dataset.k);
+      if(el.classList.contains('seg'))el.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.v===String(v))});
+      else if(el.type==='checkbox')el.checked=!!v;
+      else if(el.hasAttribute('data-lines'))el.value=(v||[]).join('\n');
+      else el.value=v==null?'':v;
+      var out=el.dataset.out&&$(el.dataset.out);if(out)out.textContent=el.value})}
+    function read(){fields.forEach(function(el){var k=el.dataset.k;
+      if(el.classList.contains('seg'))return;
+      if(el.type==='checkbox')set(S,k,el.checked);
+      else if(el.type==='number'||el.type==='range'){var n=+el.value;if(isFinite(n))set(S,k,Math.max(+(el.min||-1e9),Math.min(+(el.max||1e9),n)))}
+      else if(el.hasAttribute('data-lines'))set(S,k,el.value.split('\n').map(function(t){return t.trim()}).filter(Boolean));
+      else set(S,k,el.value.trim())})}
+    function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    function apply(){document.body.classList.toggle('pv',!!S.pv&&!noui);onApply(S)}
+    function commit(){read();apply();save();fill()}
+    panel.addEventListener('click',function(e){var b=e.target.closest('.seg button');if(!b)return;read();set(S,b.parentNode.dataset.k,b.dataset.v);apply();save();fill()});
+    panel.addEventListener('input',function(e){var el=e.target;if(el.type==='range'||el.type==='checkbox'||el.tagName==='SELECT')commit()});
+    $('gear').onclick=function(){var o=panel.classList.toggle('open');this.setAttribute('aria-expanded',o);if(o)fill()};
+    $('save').onclick=commit;
+    var cp=$('copy');if(cp)cp.onclick=function(){read();
+      var url=location.origin+location.pathname+'?ui=0&s='+encodeURIComponent(JSON.stringify(S));
+      function done(t){cp.textContent=t;setTimeout(function(){cp.textContent='Copy YoloBox link'},1800)}
+      try{navigator.clipboard.writeText(url).then(function(){done('Copied')},function(){done('Copy blocked here')})}catch(e){done('Copy blocked here')}};
+    addEventListener('keydown',function(e){if(e.key==='Escape')panel.classList.remove('open')});
+    var mt;addEventListener('mousemove',function(){document.body.classList.add('mouse');clearTimeout(mt);mt=setTimeout(function(){if(!panel.classList.contains('open'))document.body.classList.remove('mouse')},3500)});
+    apply();
+    return {S:S,fill:fill,save:save,apply:apply,commit:commit,DEF:DEF,merge:merge};
+  }
+  /* read the relay every 4s; cb(data) on success, cb(null) on failure */
+  function live(getUrl,cb,getSrc){var last=-1,cur=null;
+    function tick(){var base=String(getUrl()||'').trim().replace(/\/+$/,''),src=(getSrc&&getSrc())||'all',u=base?base+'|'+src:'';if(u!==cur){cur=u;last=-1}if(!u){cb(null,'off');return}
+      fetch(base+'/state?after='+last+(src==='all'?'':'&src='+src)).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){if(u!==cur)return;last=d.last;cb(d)}).catch(function(){if(u===cur)cb(null,'error')})}
+    setInterval(tick,4000);tick()}
+  return {$:$,init:init,fit:fit,live:live};
+})();
+(function(){
+  var $=O.$,feed=$('feed'),connected=false,demoT=null,di=0,L=null,G=null,gi=0,gT=null,lastCfg='',said=false,EK='goals-edit-key',KEY=['sub','gift','follow'],ST=null;
+  var CHIP={mod:'MOD',vip:'VIP',sub:'SUB',og:'OG'};
+  var DEMO=[{user:'Kinfolk_Kay',role:'vip',text:'Locked in for the whole stream tonight'},{user:'JayFromThe3rd',text:'Say that again for the people in the back'},
+    {event:'FOLLOW',user:'NewFace_22',text:'Just followed'},{user:'ModSquadDee',role:'mod',text:'Welcome in everyone!'},{user:'SunsetRider',role:'sub',text:'Facts, no notes'},{event:'NEW SUB',user:'HTownHolla',text:'Just subscribed'}];
+  var DEMOG={goals:[{label:'Subs',cur:12,tar:25,latest:'HTownHolla'},{label:'Followers',cur:135,tar:200,latest:'NewFace_22'}]};
+  function add(m){var el=document.createElement('div'),ev=!!m.event;el.className='msg'+(ev?' event':(m.role&&CHIP[m.role]?' '+m.role:''));
+    var h=document.createElement('div');h.className='head';
+    if(m.src&&A.S.src==='all'){var pf=document.createElement('span');pf.className='pf '+m.src;pf.textContent=m.src==='twitch'?'TWITCH':'KICK';h.appendChild(pf)}
+    var n=document.createElement('span');n.className='name';n.textContent=m.user||'';h.appendChild(n);
+    var c=ev?m.event:CHIP[m.role];if(c){var ch=document.createElement('span');ch.className='chip';ch.textContent=c;h.appendChild(ch)}
+    var t=document.createElement('div');t.className='text';t.textContent=m.text||'';el.appendChild(h);el.appendChild(t);feed.appendChild(el);trim()}
+  function trim(){var live=feed.querySelectorAll('.msg:not(.out)');for(var i=0;i<live.length-A.S.max;i++)(function(el){el.classList.add('out');setTimeout(function(){el.remove()},600)})(live[i])}
+  function clean(t){return String(t||'').replace(/\[emote:\d+:([^\]]+)\]/g,':$1:')}
+  function show(e){var n=(+e.n||0).toLocaleString('en-US'),s=e.src;
+    if(e.kind==='chat')add({src:s,user:e.user,text:clean(e.text),role:e.role});
+    else if(e.kind==='follow')add({src:s,event:'FOLLOW',user:e.user,text:'Just followed'});
+    else if(e.kind==='sub')add({src:s,event:e.text==='renewal'?'RESUB':'NEW SUB',user:e.user,text:e.text==='renewal'?'Subscribed for '+n+' months':'Just subscribed'});
+    else if(e.kind==='gift')add({src:s,event:'GIFTED',user:e.user,text:'Gifted '+n+(e.n===1?' sub':' subs')});
+    else if(e.kind==='kicks')add({src:s,event:'KICKS',user:e.user,text:'Sent '+n+' kicks'});
+    else if(e.kind==='bits')add({src:s,event:'BITS',user:e.user,text:'Cheered '+n+' bits'});
+    else if(e.kind==='raid')add({src:s,event:'RAID',user:e.user,text:'Raided with '+n+' viewers'});}
+  function demo(on){clearInterval(demoT);demoT=null;if(on)demoT=setInterval(function(){add(DEMO[di++%DEMO.length])},2800)}
+  /* goal strip: uses the goals saved from the goal tracker, plus this stream's live counts */
+  function drawGoal(){var src=connected?G:DEMOG,ok=ST.showGoal&&src&&src.goals&&src.goals.length;$('goal').classList.toggle('hide',!ok);if(!ok)return;
+    var g=src.goals[gi%src.goals.length],k=KEY[gi%src.goals.length],cur=(+g.cur||0)+(connected&&L?(+L.totals[k]||0):0),tar=Math.max(1,+g.tar||1);
+    $('gLabel').textContent=g.label;$('gCount').innerHTML='';$('gCount').append(cur.toLocaleString('en-US')+' ');var sm=document.createElement('small');sm.textContent='/ '+tar.toLocaleString('en-US');$('gCount').appendChild(sm);
+    $('gFill').style.width=Math.min(100,100*cur/tar)+'%';
+    var lt=(connected&&L&&L.latest[k])||g.latest;$('gLatest').innerHTML='';if(lt){$('gLatest').append('Latest ');var b=document.createElement('b');b.textContent=lt;$('gLatest').appendChild(b)}}
+  var A=O.init('talk-v1',{topic:'Reacting to the latest news and chatting with viewers',name:'Your Name',sub:'Live and Locked In',src:'all',showChat:true,showGoal:true,max:6,relay:'',pv:true},function(S){ST=S;
+    $('topicText').textContent=S.topic;$('topic').classList.toggle('hide',!S.topic&&!S.showGoal);
+    $('tagName').textContent=S.name;$('tagSub').textContent=S.sub;$('tag').classList.toggle('hide',!S.name&&!S.sub);
+    feed.classList.toggle('hide',!S.showChat);demo(S.showChat&&!connected);drawGoal();setTimeout(trim,0);
+  });
+  O.fit($('stage'),1920,1080);
+  clearInterval(gT);gT=setInterval(function(){var g=$('goal');g.classList.add('out');setTimeout(function(){gi++;drawGoal();g.classList.remove('out')},400)},12000);
+  if(!A.S.relay&&A.S.showChat){add(DEMO[di++]);add(DEMO[di++])}
+  /* Save & apply also sends the topic and name to the relay, so the YoloBox copy updates mid-stream */
+  $('save').addEventListener('click',function(){var base=String(A.S.relay||'').trim().replace(/\/+$/,''),n=$('note');if(!base)return;
+    var key='';try{key=localStorage.getItem(EK)||''}catch(e){}
+    var S=A.S,cfg={topic:S.topic,name:S.name,sub:S.sub,src:S.src,showChat:S.showChat,showGoal:S.showGoal,max:S.max};
+    said=true;n.textContent='Sending to every screen...';
+    fetch(base+'/config/talk',{method:'POST',body:JSON.stringify({key:key,cfg:cfg})}).then(function(r){return r.json()}).then(function(j){
+      if(j.ok){try{localStorage.setItem(EK,j.key)}catch(e){}lastCfg=JSON.stringify(cfg);n.textContent='Saved. Every screen showing this overlay updates within a few seconds.'}
+      else n.textContent=j.locked?'Not sent: a different browser is set as the editor.':'Not sent: '+(j.problem||'the relay refused it')+'.'
+    }).catch(function(){n.textContent='Not sent: could not reach the relay.'})});
+  O.live(function(){return A.S.relay},function(d,why){var n=$('note');
+    if(d){if(!connected){connected=true;demo(false);feed.innerHTML=''}L=d;try{G=d.cfg?JSON.parse(d.cfg):null}catch(e){G=null}
+      if(d.cfg_talk&&d.cfg_talk!==lastCfg){lastCfg=d.cfg_talk;try{var c=JSON.parse(d.cfg_talk);for(var k in c)A.S[k]=c[k];A.apply();A.save();if(!$('panel').classList.contains('open'))A.fill()}catch(e){}}
+      drawGoal();d.events.forEach(show);
+      if(n&&!said)n.textContent='Connected to your relay. Press Save & apply to send the topic and name to every screen, including the YoloBox.'}
+    else{if(connected){connected=false;demo(A.S.showChat)}drawGoal();if(n)n.textContent=why==='off'?'Paste your relay address to show live chat and goals. Until then this shows samples.':'Cannot reach the relay at that address. Retrying...'}
+  },function(){return A.S.src});
+})();
+</script>
+</body></html>
