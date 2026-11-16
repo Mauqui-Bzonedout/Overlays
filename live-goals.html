@@ -127,7 +127,7 @@ var O=(function(){
   return {$:$,init:init,fit:fit,live:live};
 })();
 (function(){
-  var $=O.$,i=0,timer=null,ST,L=null,KEY=['sub','gift','follow'];
+  var $=O.$,i=0,timer=null,ST,L=null,KEY=['sub','gift','follow'],lastCfg='',said=false,EK='goals-edit-key';
   var ICON=['<svg viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg>',
             '<svg viewBox="0 0 24 24"><path d="M3 9h18v3H3zM5 13h6v8H5zM13 13h6v8h-6zM12 9C9 9 6.5 7.5 7.5 5.2 8.6 3 11.2 4.6 12 7c.8-2.4 3.4-4 4.5-1.8C17.500 7.500 15 9 12 9z"/></svg>',
             '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.600 0 0 1 8 3c0 5.800-8 11-8 11z"/></svg>'];
@@ -152,8 +152,20 @@ var O=(function(){
     draw();
   });
   /* live: each goal shows the number typed in plus what the relay has counted this stream */
+  /* Save & apply also sends the goals to the relay, so the YoloBox copy updates without a new link */
+  $('save').addEventListener('click',function(){var base=String(A.S.relay||'').trim().replace(/\/+$/,''),n=$('note');if(!base)return;
+    var key='';try{key=localStorage.getItem(EK)||''}catch(e){}
+    var S=A.S,cfg={goals:S.goals,show:S.show,secs:S.secs,size:S.size,src:S.src};
+    said=true;n.textContent='Sending your goals to every screen...';
+    fetch(base+'/config/goals',{method:'POST',body:JSON.stringify({key:key,cfg:cfg})}).then(function(r){return r.json()}).then(function(j){
+      if(j.ok){try{localStorage.setItem(EK,j.key)}catch(e){}lastCfg=JSON.stringify(cfg);n.textContent='Saved. Every screen showing this tracker updates within a few seconds.'}
+      else n.textContent=j.locked?'Not sent: a different browser is set as the editor for this tracker.':'Not sent: '+(j.problem||'the relay refused it')+'.'
+    }).catch(function(){n.textContent='Not sent: could not reach the relay.'})});
   O.live(function(){return A.S.relay},function(d,why){var n=$('note');
-    if(d){L=d;draw();if(n)n.textContent='Connected to your relay. Each goal counts up from the number you typed.'}
+    if(d){L=d;
+      if(d.cfg&&d.cfg!==lastCfg){lastCfg=d.cfg;try{var c=JSON.parse(d.cfg);['goals','show','secs','size','src'].forEach(function(k){if(c[k]!=null)A.S[k]=c[k]});A.apply();A.save();if(!$('panel').classList.contains('open'))A.fill()}catch(e){}}
+      else draw();
+      if(n&&!said)n.textContent='Connected to your relay. Press Save & apply to send your goals to every screen, including the YoloBox.'}
     else{if(n)n.textContent=why==='off'?'Numbers are typed in by hand until you paste your relay address.':'Cannot reach the relay at that address. Retrying...'}},function(){return A.S.src});
 })();
 </script>
